@@ -2,7 +2,7 @@ import type { Selector } from '.'
 
 export interface CheckElementExistsOptions {
   selector: Selector
-  timeout: number
+  timeout?: number
 }
 
 export interface CookiesOptions {
@@ -18,5 +18,5 @@ export interface SelectDropdownOptions {
 export interface SetVariableOptions {
   selectedVariable: string
   operator: '=' | '+' | '-' | '*' | '/' | 'Concatenate'
-  value: number
+  value: number | string
 }

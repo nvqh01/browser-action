@@ -1,11 +1,14 @@
-import type { Browser, Device, Page } from 'puppeteer'
+import type { Browser, Page } from 'puppeteer'
 import type {
   Action as IBrowserAction,
+  ActivateTabOptions,
   CheckElementExistsOptions,
   ClickOptions,
   CookiesOptions,
-  Coordinates,
+  EmulateOptions,
   InfiniteScrollOptions,
+  MoveMouseOptions,
+  OpenUrlOptions,
   PressKeyOptions,
   ScreenshotOptions,
   SelectDropdownOptions,
@@ -56,7 +59,8 @@ export class BrowserAction implements IBrowserAction {
   }
 
   // Navigation Actions:
-  async activateTab(index: number) {
+  async activateTab(options: ActivateTabOptions) {
+    const { index } = options
     const page = await this.getPageByIndex(index)
     await page.bringToFront()
     this.currentPage = page
@@ -88,18 +92,19 @@ export class BrowserAction implements IBrowserAction {
     await currentPage.goForward(options)
   }
 
-  async newTab(url?: string, options: WaitForOptions = defautlWaitForOptions) {
+  async newTab(options?: OpenUrlOptions) {
     this.currentPage = await this.browser.newPage()
-    if (url) await this.openUrl(url, options)
+    if (options?.url) await this.openUrl(options)
   }
 
-  async openUrl(url: string, options: WaitForOptions = defautlWaitForOptions) {
+  async openUrl(options: OpenUrlOptions) {
     const currentPage = this.getCurrentPage()
 
     if (!currentPage) {
-      await this.newTab(url, options)
+      await this.newTab(options)
     } else {
-      await currentPage.goto(url, options)
+      const { url, ...waitForOptions } = options
+      await currentPage.goto(url, { ...defautlWaitForOptions, ...(waitForOptions || {}) })
     }
   }
 
@@ -121,7 +126,7 @@ export class BrowserAction implements IBrowserAction {
   // Mouse Actions:
   async click(options: ClickOptions) {
     const currentPage = this.getCurrentPage()
-    const { clickCount, delay, mouseButton, selectBy } = options
+    const { clickCount = 1, delay = 0, mouseButton = 'left', selectBy } = options
 
     if (selectBy.coordinates) {
       await currentPage.mouse.click(selectBy.coordinates.x, selectBy.coordinates.y, {
@@ -140,14 +145,15 @@ export class BrowserAction implements IBrowserAction {
     }
   }
 
-  async moveMouse(coordinates: Coordinates) {
+  async moveMouse(options: MoveMouseOptions) {
     const currentPage = this.getCurrentPage()
+    const { coordinates } = options
     await currentPage.mouse.move(coordinates.x, coordinates.y)
   }
 
-  async scroll(options: InfiniteScrollOptions) {
+  async scroll(options?: InfiniteScrollOptions) {
     const currentPage = this.getCurrentPage()
-    await puppeteerUtils.infiniteScroll(currentPage, options)
+    await puppeteerUtils.infiniteScroll(currentPage, options || {})
   }
 
   // Keyboard Actions:
@@ -161,7 +167,7 @@ export class BrowserAction implements IBrowserAction {
 
   async typeText(options: TypeTextOptions) {
     const currentPage = this.getCurrentPage()
-    let { selector, speed, text, typeAsHuman } = options
+    let { selector, speed = 1, text, typeAsHuman = false } = options
     typeAsHuman && (speed = 0.5)
     await currentPage.type(selector.value, text, { delay: speed })
   }
@@ -169,7 +175,7 @@ export class BrowserAction implements IBrowserAction {
   // Data Actions:
   async checkElementExists(options: CheckElementExistsOptions) {
     const currentPage = this.getCurrentPage()
-    const { selector, timeout } = options
+    const { selector, timeout = 30000 } = options
     await currentPage.waitForSelector(selector.value, { timeout })
   }
 
@@ -208,16 +214,16 @@ export class BrowserAction implements IBrowserAction {
         this.globalVariables[selectedVariable] = value
         break
       case '+':
-        this.globalVariables[selectedVariable] += value
+        this.globalVariables[selectedVariable] += value as number
         break
       case '-':
-        this.globalVariables[selectedVariable] -= value
+        this.globalVariables[selectedVariable] -= value as number
         break
       case '*':
-        this.globalVariables[selectedVariable] *= value
+        this.globalVariables[selectedVariable] *= value as number
         break
       case '/':
-        this.globalVariables[selectedVariable] /= value
+        this.globalVariables[selectedVariable] /= value as number
         break
       case 'Concatenate':
         this.globalVariables[selectedVariable] += `${value}`
@@ -226,8 +232,9 @@ export class BrowserAction implements IBrowserAction {
   }
 
   // Other Actions:
-  async emulate(device: Device) {
+  async emulate(options: EmulateOptions) {
     const currentPage = this.getCurrentPage()
+    const { device } = options
     await currentPage.emulate(device)
   }
 

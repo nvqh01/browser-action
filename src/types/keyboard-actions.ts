@@ -8,9 +8,9 @@ export interface PressKeyOptions {
 
 export interface TypeTextOptions {
   selector: Selector
-  speed: number
+  speed?: number
   text: string
-  typeAsHuman: boolean
+  typeAsHuman?: boolean
 }
 
 export type { KeyInput } from 'puppeteer'
