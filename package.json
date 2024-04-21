@@ -2,7 +2,7 @@
   "name": "@mmologin/browser-action",
   "private": false,
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -15,6 +15,9 @@
   },
   "dependencies": {
     "@crawlee/puppeteer": "^3.8.2",
+    "@faker-js/faker": "^8.4.1",
+    "axios": "^1.6.8",
+    "eval": "^0.1.8",
     "fs-extra": "^11.2.0",
     "puppeteer": "*"
   },

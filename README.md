@@ -192,7 +192,64 @@ params:
   }
 ```
 
-_**3. Select Dropdown:**_
+_**3. Get Attribute:**_
+
+```
+method: getAttribute
+params:
+  + options: {
+    attributeName: string;;
+    selector: {
+      type: 'xpath' | 'css' | 'text';
+      value: string;
+    };
+    selectedVariable: string;
+  }
+```
+
+_**4. Get Text:**_
+
+```
+method: getText
+params:
+  + options: {
+    selector: {
+      type: 'xpath' | 'css' | 'text';
+      value: string;
+    };
+    selectedVariable: string;
+  }
+```
+
+_**4. Get Url:**_
+
+```
+method: getUrl
+params:
+  + options: {
+    selectedVariable: string;
+  }
+```
+
+_**5. Save Asset:**_
+
+```
+method: saveAsset
+params:
+  + options: {
+    fileName?: string
+    outputDir: string
+    saveAssetBy: {
+      selector?: {
+        type: 'xpath' | 'css' | 'text';
+        value: string;
+      }
+      url?: string
+    }
+  }
+```
+
+_**6. Select Dropdown:**_
 
 ```
 method: selectDropdown
@@ -202,25 +259,52 @@ params:
       type: 'xpath' | 'css' | 'text';
       value: string;
     };
-    selectedValue: string
+    selectedValue: string;
   }
 ```
 
-_**4. Set Variable:**_
+_**7. Set Variable:**_
 
 ```
 method: setVariable
 params:
   + options: {
-    selectedVariable: string
-    operator: '=' | '+' | '-' | '*' | '/' | 'Concatenate'
-    value: number | string
+    selectedVariable: string;
+    operator: '=' | '+' | '-' | '*' | '/' | 'Concatenate';
+    value: any;
+  }
+```
+
+_**8. Upload File:**_
+
+```
+method: uploadFile
+params:
+  + options: {
+    clickToUpload?: boolean;
+    filePath: string;
+    selector?: {
+      type: 'xpath' | 'css' | 'text';
+      value: string;
+    };
   }
 ```
 
 ### **V. Other Actions:**
 
-_**1. Emulate:**_
+_**1. Condition:**_
+
+```
+method: condition
+params:
+  + options: {
+    leftOperand: string;
+    operator: '<' | '>' | '=' | '!=' | '<=' | '>=';
+    rightOperand: string;
+  }
+```
+
+_**2. Emulate:**_
 
 ```
 method: emulate
@@ -236,27 +320,61 @@ params:
   }
 ```
 
-_**2. Screenshot:**_
+_**3. Eval:**_
+
+```
+method: eval
+params:
+  + options: {
+    script: string;
+    selectedVariable: string;
+  }
+```
+
+_**4. Loop:**_
+
+```
+method: loop
+params:
+  + options: {
+    actions: {
+      name: string;
+      options: any;
+    }[]
+    loopType: 'for' | 'while';
+
+    // Use for loop type "For"
+    forFromValue?: number;
+    forToValue?: number;
+
+    // Use for loop type "While"
+    leftOperand?: string;
+    operator?: '<' | '>' | '=' | '!=' | '<=' | '>=';
+    rightOperand?: string;
+  }
+```
+
+_**5. Screenshot:**_
 
 ```
 method: screenshot
 params:
   + options: {
-    fileName: string
-    path: string
+    fileName: string;
+    path: string;
   }
 ```
 
-_**3. Sleep:**_
+_**6. Sleep:**_
 
 ```
 method: sleep
 params:
   + options: {
-    seconds: number
+    seconds: number;
     random?: {
-      from: number
-      to: number
+      from: number;
+      to: number;
     }
   }
 ```

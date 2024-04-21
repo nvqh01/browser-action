@@ -5,10 +5,22 @@ import type { PressKeyOptions, TypeTextOptions } from './keyboard-actions'
 import type {
   CheckElementExistsOptions,
   CookiesOptions,
+  GetAttributeOptions,
+  GetTextOptions,
+  GetUrlOptions,
+  SaveAssetOptions,
   SelectDropdownOptions,
-  SetVariableOptions
+  SetVariableOptions,
+  UploadFileOptions
 } from './data-action'
-import type { EmulateOptions, ScreenshotOptions, SleepOptions } from './other-actions'
+import type {
+  EmulateOptions,
+  ConditionOptions,
+  ScreenshotOptions,
+  SleepOptions,
+  EvalOptions,
+  LoopOptions
+} from './other-actions'
 
 export interface Coordinates extends Offset {}
 
@@ -45,11 +57,19 @@ export interface Action {
   // Data Actions:
   checkElementExists: (options: CheckElementExistsOptions) => Promise<void>
   cookies: (options: CookiesOptions) => Promise<void>
+  getAttribute: (options: GetAttributeOptions) => Promise<void>
+  getText: (options: GetTextOptions) => Promise<void>
+  getUrl: (options: GetUrlOptions) => void
+  saveAsset: (options: SaveAssetOptions) => Promise<void>
   selectDropdown: (options: SelectDropdownOptions) => Promise<void>
   setVariable: (options: SetVariableOptions) => void
+  uploadFile: (options: UploadFileOptions) => Promise<void>
 
   // Other Actions:
+  condition: (options: ConditionOptions) => boolean
   emulate: (options: EmulateOptions) => Promise<void>
+  eval: (options: EvalOptions) => Promise<void>
+  loop: (options: LoopOptions) => Promise<void>
   screenshot: (options: ScreenshotOptions) => Promise<void>
   sleep: (options: SleepOptions) => Promise<unknown>
 }

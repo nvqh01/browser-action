@@ -7,7 +7,31 @@ export interface CheckElementExistsOptions {
 
 export interface CookiesOptions {
   type: 'import' | 'export' | 'clear'
-  path?: string
+  filePath?: string
+}
+
+export interface GetAttributeOptions {
+  attributeName: string
+  selector: Selector
+  selectedVariable: string
+}
+
+export interface GetTextOptions {
+  selector: Selector
+  selectedVariable: string
+}
+
+export interface GetUrlOptions {
+  selectedVariable: string
+}
+
+export interface SaveAssetOptions {
+  fileName?: string
+  outputDir: string
+  saveAssetBy: {
+    selector?: Selector
+    url?: string
+  }
 }
 
 export interface SelectDropdownOptions {
@@ -18,5 +42,12 @@ export interface SelectDropdownOptions {
 export interface SetVariableOptions {
   selectedVariable: string
   operator: '=' | '+' | '-' | '*' | '/' | 'Concatenate'
-  value: number | string
+  value: any
+}
+
+export interface UploadFileOptions {
+  clickToUpload?: boolean
+  filePath: string
+  fileType: 'file' | 'url_image' | 'base64_image'
+  selector: Selector
 }
