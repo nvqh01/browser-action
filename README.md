@@ -54,10 +54,10 @@ params:
 _**6. New Tab:**_
 
 ```
-method: activateTab
+method: newTab
 params:
   + options?: {
-    url: string;
+    url?: string;
     timeout?: number;
     waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2';
   }
@@ -83,6 +83,8 @@ params:
   + options: {
     index?: number;
     current: boolean;
+    timeout?: number;
+    waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2';
   }
 ```
 
@@ -203,7 +205,7 @@ params:
       type: 'xpath' | 'css' | 'text';
       value: string;
     };
-    selectedVariable: string;
+    variable: string;
   }
 ```
 
@@ -217,7 +219,7 @@ params:
       type: 'xpath' | 'css' | 'text';
       value: string;
     };
-    selectedVariable: string;
+    variable: string;
   }
 ```
 
@@ -227,7 +229,7 @@ _**4. Get Url:**_
 method: getUrl
 params:
   + options: {
-    selectedVariable: string;
+    variable: string;
   }
 ```
 
@@ -269,9 +271,9 @@ _**7. Set Variable:**_
 method: setVariable
 params:
   + options: {
-    selectedVariable: string;
+    variable: string;
     operator: '=' | '+' | '-' | '*' | '/' | 'Concatenate';
-    value: any;
+    value: string;
   }
 ```
 
@@ -327,7 +329,7 @@ method: eval
 params:
   + options: {
     script: string;
-    selectedVariable: string;
+    variable: string;
   }
 ```
 
@@ -337,20 +339,20 @@ _**4. Loop:**_
 method: loop
 params:
   + options: {
-    actions: {
-      name: string;
+    actions?: {
+      type: string;
       options: any;
     }[]
     loopType: 'for' | 'while';
 
     // Use for loop type "For"
-    forFromValue?: number;
-    forToValue?: number;
+    forFromValue?: number | string;
+    forToValue?: number | string;
 
     // Use for loop type "While"
     leftOperand?: string;
     operator?: '<' | '>' | '=' | '!=' | '<=' | '>=';
-    rightOperand?: string;
+    rightOperand?: number | string;
   }
 ```
 
@@ -361,7 +363,7 @@ method: screenshot
 params:
   + options: {
     fileName: string;
-    path: string;
+    filePath: string;
   }
 ```
 

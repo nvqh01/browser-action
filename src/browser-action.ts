@@ -1,7 +1,7 @@
 import compileScript from 'eval'
 import path from 'path'
+import { convertSnakeToCamel, convertStringToRelativeType, getRandom, saveImageFromURL } from './utils'
 import { faker } from '@faker-js/faker'
-import { getRandom, saveImageFromURL } from './utils'
 import { outputJSONSync, readJSONSync } from 'fs-extra'
 import { puppeteerUtils } from '@crawlee/puppeteer'
 import type { Browser, Page } from 'puppeteer'
@@ -69,24 +69,21 @@ export class BrowserAction implements IBrowserAction {
     return await this.browser.pages()
   }
 
-  private getVariable(key: object | string | undefined, options: { checkFormat?: boolean } = {}): any {
-    if (!key) return null
-    if (typeof key === 'object') return key
-    const { checkFormat } = options
-    // Example: ${PROFILE_ID} => PROFILE_ID
-    if (checkFormat && /^\$\{.+\}/.test(key)) key = key.substring(2, key.length - 1)
-    return this.globalVariables[key]
-  }
+  private getVariable(variable: string): any {
+    if (!/^\$\{.+\}/.test(variable)) {
+      return this.globalVariables[variable] ?? convertStringToRelativeType(variable)
+    }
 
-  public setGlobalVariables(key: string, value: any): void {
-    this.globalVariables[key] = value
+    // Example: ${PROFILE_ID} => PROFILE_ID
+    variable = variable.substring(2, variable.length - 1)
+    return this.globalVariables[variable]
   }
 
   // Navigation Actions:
   async activateTab(options: ActivateTabOptions) {
-    const { index } = options
-    const _index = Number.parseInt(this.getVariable(`${index}`, { checkFormat: true }))
-    const page = await this.getPageByIndex(_index)
+    let { index } = options
+    index = this.getVariable(`${index}`)
+    const page = await this.getPageByIndex(index)
     await page.bringToFront()
     this.currentPage = page
   }
@@ -117,21 +114,16 @@ export class BrowserAction implements IBrowserAction {
     await currentPage.goForward(options)
   }
 
-  async newTab(options?: OpenUrlOptions) {
+  async newTab(options: Partial<OpenUrlOptions> = {}) {
     this.currentPage = await this.browser.newPage()
-    if (options?.url) await this.openUrl(options)
+    if (options?.url) await this.openUrl(options as OpenUrlOptions)
   }
 
   async openUrl(options: OpenUrlOptions) {
     const currentPage = this.getCurrentPage()
-
-    if (!currentPage) {
-      await this.newTab(options)
-    } else {
-      const { url, ...waitForOptions } = options
-      const _url = this.getVariable(url, { checkFormat: true })
-      await currentPage.goto(_url, { ...defautlWaitForOptions, ...(waitForOptions || {}) })
-    }
+    let { url, ...waitForOptions } = options
+    url = this.getVariable(url)
+    await currentPage.goto(url, { ...defautlWaitForOptions, ...(waitForOptions || {}) })
   }
 
   async reloadTab(options: SelectedTabOptions) {
@@ -143,7 +135,7 @@ export class BrowserAction implements IBrowserAction {
       await currentPage.reload({ timeout: options.timeout, waitUntil: options.waitUntil })
     }
 
-    if (options.index) {
+    if (options?.index) {
       const page = await this.getPageByIndex(options.index)
       await page.reload({ timeout: options.timeout, waitUntil: options.waitUntil })
     }
@@ -154,7 +146,7 @@ export class BrowserAction implements IBrowserAction {
     const currentPage = this.getCurrentPage()
     const { clickCount = 1, delay = 0, mouseButton = 'left', selectBy } = options
 
-    if (selectBy.coordinates) {
+    if (selectBy?.coordinates) {
       await currentPage.mouse.click(selectBy.coordinates.x, selectBy.coordinates.y, {
         button: mouseButton,
         count: clickCount,
@@ -162,7 +154,8 @@ export class BrowserAction implements IBrowserAction {
       })
     }
 
-    if (selectBy.selector) {
+    if (selectBy?.selector) {
+      selectBy.selector.type === 'xpath' && (selectBy.selector.value = `xpath=${selectBy.selector.value}`)
       await currentPage.click(selectBy.selector.value, {
         button: mouseButton,
         count: clickCount,
@@ -194,33 +187,35 @@ export class BrowserAction implements IBrowserAction {
   async typeText(options: TypeTextOptions) {
     const currentPage = this.getCurrentPage()
     let { selector, speed = 1, text, typeAsHuman = false } = options
-    const _text = this.getVariable(text, { checkFormat: true })
+    text = this.getVariable(text)
     typeAsHuman && (speed = 0.5)
-    await currentPage.type(selector.value, _text, { delay: speed })
+    selector.type === 'xpath' && (selector.value = `xpath=${selector.value}`)
+    await currentPage.type(selector.value, text, { delay: speed })
   }
 
   // Data Actions:
   async checkElementExists(options: CheckElementExistsOptions) {
     const currentPage = this.getCurrentPage()
     const { selector, timeout = 30000 } = options
+    selector.type === 'xpath' && (selector.value = `xpath=${selector.value}`)
     await currentPage.waitForSelector(selector.value, { timeout })
   }
 
   async cookies(options: CookiesOptions) {
     const currentPage = this.getCurrentPage()
-    const { type, filePath } = options
+    let { type, filePath } = options
 
-    const _filePath = this.getVariable(filePath, { checkFormat: true }) as string
+    filePath && (filePath = this.getVariable(filePath))
 
-    if (type === 'import' && _filePath) {
-      const cookies = readJSONSync(_filePath)
+    if (type === 'import' && filePath) {
+      const cookies = readJSONSync(filePath)
       if (!Array.isArray(cookies)) throw new Error('Can not import cookies because of being invalid.')
       await currentPage.setCookie(...cookies)
     }
 
-    if (type === 'export' && _filePath) {
+    if (type === 'export' && filePath) {
       const cookies = await currentPage.cookies()
-      outputJSONSync(_filePath, cookies)
+      outputJSONSync(filePath, cookies, { spaces: 2 })
     }
 
     if (type === 'clear') {
@@ -231,85 +226,94 @@ export class BrowserAction implements IBrowserAction {
 
   async getAttribute(options: GetAttributeOptions) {
     const currentPage = this.getCurrentPage()
-    const { attributeName, selector, selectedVariable } = options
-    const _attributeName = this.getVariable(attributeName) as string
+    let { attributeName, selector, variable } = options
+    attributeName = this.getVariable(attributeName)
+    selector.type === 'xpath' && (selector.value = `xpath=${selector.value}`)
     const element = await currentPage.$(selector.value)
-    const attributeValue = await currentPage.evaluate((_element) => _element?.getAttribute(_attributeName), element)
-    this.setVariable({ selectedVariable, operator: '=', value: attributeValue })
+    const attributeValue =
+      (await currentPage.evaluate((_element) => _element?.getAttribute(attributeName), element)) ?? 'Unknown'
+    this.setVariable({ variable, operator: '=', value: attributeValue })
   }
 
   async getText(options: GetTextOptions) {
     const currentPage = this.getCurrentPage()
-    const { selector, selectedVariable } = options
+    const { selector, variable } = options
+    selector.type === 'xpath' && (selector.value = `xpath=${selector.value}`)
     const element = await currentPage.$(selector.value)
-    const text = await currentPage.evaluate((_element) => _element?.textContent, element)
-    this.setVariable({ selectedVariable, operator: '=', value: text })
+    const text = (await currentPage.evaluate((_element) => _element?.textContent, element)) || 'Unknown'
+    this.setVariable({ variable, operator: '=', value: text })
   }
 
   getUrl(options: GetUrlOptions) {
     const currentPage = this.getCurrentPage()
-    const { selectedVariable } = options
-    const value = currentPage.url()
-    this.setVariable({ selectedVariable, operator: '=', value })
+    const { variable } = options
+    const url = currentPage.url()
+    this.setVariable({ variable, operator: '=', value: url })
   }
 
   async saveAsset(options: SaveAssetOptions) {
     let { fileName, outputDir, saveAssetBy } = options
     let { selector, url } = saveAssetBy
 
-    !fileName && (fileName = `${faker.string.uuid}.jpg`)
+    if (fileName) {
+      fileName = this.getVariable(fileName)
+    } else {
+      fileName = `${faker.string.uuid()}.jpg`
+    }
+
+    outputDir = this.getVariable(outputDir)
 
     if (!url && selector) {
-      const selectedVariable = faker.string.uuid()
-      await this.getAttribute({ attributeName: 'href', selector, selectedVariable })
-      url = this.getVariable(selectedVariable)
-      this.deleteVariable(selectedVariable)
+      const tempVariable = faker.string.uuid()
+      await this.getAttribute({ attributeName: 'href', selector, variable: tempVariable })
+      url = this.getVariable(tempVariable)
+      this.deleteVariable(tempVariable)
     }
 
     if (!url) throw new Error('Can not save asset because url is undefined.')
 
-    const outputPath = await saveImageFromURL(url, outputDir, fileName)
+    const outputPath = await saveImageFromURL(url, outputDir, fileName as string)
+    return outputPath
   }
 
   async selectDropdown(options: SelectDropdownOptions) {
     const currentPage = this.getCurrentPage()
-    const { selector, selectedValue } = options
-    const _selectedValue = this.getVariable(selectedValue, { checkFormat: true }) as string
-    await currentPage.select(selector.value, _selectedValue)
+    let { selector, selectedValue } = options
+    selectedValue = this.getVariable(selectedValue)
+    selector.type === 'xpath' && (selector.value = `xpath=${selector.value}`)
+    await currentPage.select(selector.value, selectedValue)
   }
 
   setVariable(options: SetVariableOptions) {
-    const { selectedVariable, operator, value } = options
-
-    const _value = this.getVariable(value, { checkFormat: true })
+    const { variable, operator, value } = options
+    const _value = convertStringToRelativeType(value)
 
     switch (operator) {
       case '=':
-        this.globalVariables[selectedVariable] = _value
+        this.globalVariables[variable] = _value
         break
       case '+':
-        this.globalVariables[selectedVariable] += Number.parseInt(_value)
+        this.globalVariables[variable] += _value
         break
       case '-':
-        this.globalVariables[selectedVariable] -= Number.parseInt(_value)
+        this.globalVariables[variable] -= _value as number
         break
       case '*':
-        this.globalVariables[selectedVariable] *= Number.parseInt(_value)
+        this.globalVariables[variable] *= _value as number
         break
       case '/':
-        this.globalVariables[selectedVariable] /= Number.parseInt(_value)
+        this.globalVariables[variable] /= _value as number
         break
       case 'Concatenate':
-        this.globalVariables[selectedVariable] += `${_value}`
+        this.globalVariables[variable] += `${_value}`
         break
     }
   }
 
   async uploadFile(options: UploadFileOptions) {
     const currentPage = this.getCurrentPage()
-    const { clickToUpload = false, filePath, fileType, selector } = options
-
-    const _filePath = this.getVariable(filePath, { checkFormat: true }) as string
+    let { clickToUpload = false, filePath, fileType, selector } = options
+    filePath = this.getVariable(filePath)
 
     if (selector && clickToUpload) {
       await this.checkElementExists({ selector })
@@ -317,15 +321,15 @@ export class BrowserAction implements IBrowserAction {
     }
 
     const inputUploadHandle = (await currentPage.$('input[type="file"]')) as any
-    await inputUploadHandle.uploadFile(_filePath)
+    await inputUploadHandle.uploadFile(filePath)
   }
 
   // Other Actions:
   condition(options: ConditionOptions) {
     let { leftOperand, operator, rightOperand } = options
 
-    const _leftOperand = Number.parseInt(this.getVariable(leftOperand, { checkFormat: true }))
-    const _rightOperand = Number.parseInt(this.getVariable(rightOperand, { checkFormat: true }))
+    const _leftOperand = this.getVariable(leftOperand)
+    const _rightOperand = this.getVariable(rightOperand)
 
     switch (operator) {
       case '<':
@@ -351,69 +355,70 @@ export class BrowserAction implements IBrowserAction {
 
   async eval(options: EvalOptions) {
     const currentPage = this.getCurrentPage()
-    const { script, selectedVariable } = options
-    const value = (await currentPage.evaluate(async () => compileScript(script, true))) as any
-    this.setVariable({ selectedVariable, operator: '=', value })
+    const { script, variable } = options
+    const value = ((await currentPage.evaluate(async () => compileScript(script, true))) as any) || 'Unknown'
+    this.setVariable({ variable, operator: '=', value })
   }
 
   async loop(options: LoopOptions) {
-    let { actions, loopType, forFromValue, forToValue, leftOperand, operator, rightOperand } = options
+    let { actions = [], loopType, forFromValue, forToValue, leftOperand, operator, rightOperand } = options
 
     const executeActions = async () => {
-      for (const { name, options } of actions) {
+      for (const { type, options } of actions) {
+        const methodName = convertSnakeToCamel(type)
         // @ts-ignore
-        await this[`${name}`](options)
+        await this[`${methodName}`](options)
       }
     }
 
     if (loopType === 'for' && forFromValue && forToValue) {
-      const _forFromValue = Number.parseInt(this.getVariable(`${forFromValue}`, { checkFormat: true }))
-      const _forToValue = Number.parseInt(this.getVariable(`${forFromValue}`, { checkFormat: true }))
+      const _forFromValue = this.getVariable(`${forFromValue}`) as number
+      const _forToValue = this.getVariable(`${forToValue}`) as number
 
       for (let i = _forFromValue; i < _forToValue; ++i) await executeActions()
     }
-
-    if (loopType === 'while' && leftOperand && operator && rightOperand)
+    if (loopType === 'while' && leftOperand && operator && rightOperand) {
       while (true) {
-        let canBreakLoop = false
+        await executeActions()
 
-        const _leftOperand = Number.parseInt(this.getVariable(leftOperand, { checkFormat: true }))
-        const _rightOperand = Number.parseInt(this.getVariable(rightOperand, { checkFormat: true }))
+        let canContinueLoop = false
+        const _leftOperand = this.getVariable(leftOperand) as number
+        const _rightOperand = this.getVariable(`${rightOperand}`) as number
 
         switch (operator) {
           case '<':
-            canBreakLoop = _leftOperand < _rightOperand
+            canContinueLoop = _leftOperand < _rightOperand
             break
           case '>':
-            canBreakLoop = _leftOperand > _rightOperand
+            canContinueLoop = _leftOperand > _rightOperand
             break
           case '=':
-            canBreakLoop = _leftOperand == _rightOperand
+            canContinueLoop = _leftOperand == _rightOperand
             break
           case '!=':
-            canBreakLoop = _leftOperand != _rightOperand
+            canContinueLoop = _leftOperand != _rightOperand
             break
           case '<=':
-            canBreakLoop = _leftOperand <= _rightOperand
+            canContinueLoop = _leftOperand <= _rightOperand
             break
           case '>=':
-            canBreakLoop = _leftOperand >= _rightOperand
+            canContinueLoop = _leftOperand >= _rightOperand
             break
         }
 
-        if (canBreakLoop) break
-        await executeActions()
+        if (!canContinueLoop) break
       }
+    }
   }
 
   async screenshot(options: ScreenshotOptions) {
     const currentPage = this.getCurrentPage()
-    const { fileName, filePath } = options
+    let { fileName, filePath } = options
 
-    const _fileName = this.getVariable(fileName, { checkFormat: true }) as string
-    const _filePath = this.getVariable(filePath, { checkFormat: true }) as string
+    fileName = this.getVariable(fileName)
+    filePath = this.getVariable(filePath)
 
-    await currentPage.screenshot({ path: path.join(_filePath, _fileName) })
+    await currentPage.screenshot({ path: path.join(filePath, fileName) })
   }
 
   async sleep(options: SleepOptions) {

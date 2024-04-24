@@ -13,16 +13,16 @@ export interface CookiesOptions {
 export interface GetAttributeOptions {
   attributeName: string
   selector: Selector
-  selectedVariable: string
+  variable: string
 }
 
 export interface GetTextOptions {
   selector: Selector
-  selectedVariable: string
+  variable: string
 }
 
 export interface GetUrlOptions {
-  selectedVariable: string
+  variable: string
 }
 
 export interface SaveAssetOptions {
@@ -40,9 +40,9 @@ export interface SelectDropdownOptions {
 }
 
 export interface SetVariableOptions {
-  selectedVariable: string
+  variable: string
   operator: '=' | '+' | '-' | '*' | '/' | 'Concatenate'
-  value: any
+  value: string
 }
 
 export interface UploadFileOptions {

@@ -12,31 +12,66 @@ const start = async () => {
   browser = await launch({ defaultViewport: { width: 1920, height: 1080 }, headless: false })
   const browserAction = await BrowserAction.createInstance(browser, {})
 
-  await browserAction.emulate({ device: KnownDevices['iPhone 12'] })
-  await browserAction.openUrl({ url: 'https://google.com' })
-  await browserAction.sleep({ seconds: 2 })
+  // Set Variable:
+  browserAction.setVariable({ variable: 'WHILE_INDEX', operator: '=', value: '0' })
+  console.log('Set variable...')
 
-  await browserAction.openUrl({ url: 'https://facebook.com' })
-  await browserAction.sleep({ seconds: 2 })
+  // Loop:
+  const actions = [
+    { type: 'EMULATE', options: { device: KnownDevices['iPhone 12'] } },
+    { type: 'NEW_TAB', options: {} },
+    { type: 'OPEN_URL', options: { url: 'https://facebook.com' } },
+    { type: 'SET_VARIABLE', options: { variable: 'WHILE_INDEX', operator: '+', value: '1' } }
+  ]
+  await browserAction.loop({ actions, loopType: 'while', leftOperand: 'WHILE_INDEX', operator: '<', rightOperand: '3' })
+  console.log('Loop...')
 
-  await browserAction.newTab({ url: 'https://thanhnien.vn' })
-  await browserAction.scroll({ scrollDownAndUp: true, timeoutSecs: 2 })
-  await browserAction.sleep({ seconds: 2 })
+  // Open Url:
+  await browserAction.openUrl({ url: 'https://google.com/' })
+  console.log('Open url...')
 
-  await browserAction.activateTab({ index: 0 })
-  await browserAction.sleep({ seconds: 2 })
+  // Type Text:
+  await browserAction.typeText({ selector: { type: 'css', value: '#APjFqb' }, text: 'Penguin', speed: 2 })
+  console.log('Type text...')
 
-  await browserAction.goBack()
-  await browserAction.sleep({ seconds: 2 })
+  // Press Key:
+  await browserAction.pressKey({ keys: ['Enter'] })
+  console.log('Press key...')
 
-  await browserAction.reloadTab({ current: true })
-  await browserAction.sleep({ seconds: 2 })
+  // Check Element Exists:
+  await browserAction.checkElementExists({
+    selector: { type: 'xpath', value: '//*[@id="hdtb-sc"]/div/div/div[1]/div[2]/a' }
+  })
+  console.log('Check element exists...')
 
-  await browserAction.goForward()
-  await browserAction.sleep({ seconds: 2 })
+  // Click:
+  await browserAction.click({
+    selectBy: {
+      selector: {
+        type: 'xpath',
+        value: '//*[@id="hdtb-sc"]/div/div/div[1]/div[2]/a'
+      }
+    }
+  })
+  console.log('Click...')
 
+  // Save Asset:
+  await browserAction.saveAsset({
+    outputDir: `${__dirname}/..`,
+    saveAssetBy: {
+      url: 'https://storage.googleapis.com/oceanwide_web/media-dynamic/cache/widen_1100_progressive/media/default/0001/01/0726f6455875202da6e60252717243e8edc36cc9.jpeg'
+    }
+  })
+  console.log('Save asset...')
+
+  // Export Cookies:
+  await browserAction.cookies({ type: 'export', filePath: 'cookies.json' })
+  console.log('Export cookies...')
+
+  // Close Browser:
   await browserAction.sleep({ seconds: 300 })
   await browserAction.closeBrowser()
+  console.log('Close browser...')
 }
 
 start().catch(async (error) => {

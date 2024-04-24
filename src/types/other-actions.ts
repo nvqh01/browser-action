@@ -12,21 +12,21 @@ export interface EmulateOptions {
 
 export interface EvalOptions {
   script: string
-  selectedVariable: string
+  variable: string
 }
 
 export interface LoopOptions {
-  actions: { name: string; options: any }[]
+  actions?: { type: string; options: any }[]
   loopType: 'for' | 'while'
 
   // Use for loop type "For"
-  forFromValue?: number
-  forToValue?: number
+  forFromValue?: number | string
+  forToValue?: number | string
 
   // Use for loop type "While"
   leftOperand?: string
   operator?: '<' | '>' | '=' | '!=' | '<=' | '>='
-  rightOperand?: string
+  rightOperand?: number | string
 }
 
 export interface ScreenshotOptions {

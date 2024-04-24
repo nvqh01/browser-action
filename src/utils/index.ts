@@ -2,6 +2,17 @@ import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
 
+export function convertStringToRelativeType(str: string): boolean | number | string {
+  if (str === 'true') return true
+  if (str === 'false') return false
+  if (/^([0-9]){1,}$/g.test(str)) return Number.parseInt(str)
+  return str
+}
+
+export function convertSnakeToCamel(str: string): string {
+  return str.toLowerCase().replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase())
+}
+
 export function getRandom(min: number, max: number): number {
   const minCeiled = Math.ceil(min)
   const maxFloored = Math.floor(max)

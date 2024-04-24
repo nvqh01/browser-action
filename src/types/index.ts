@@ -41,7 +41,7 @@ export interface Action {
   closeBrowser: () => Promise<void>
   goBack: (options?: WaitForOptions) => Promise<void>
   goForward: (options?: WaitForOptions) => Promise<void>
-  newTab: (options?: OpenUrlOptions) => Promise<void>
+  newTab: (options?: Partial<OpenUrlOptions>) => Promise<void>
   openUrl: (options: OpenUrlOptions) => Promise<void>
   reloadTab: (options: SelectedTabOptions) => Promise<void>
 
@@ -60,7 +60,7 @@ export interface Action {
   getAttribute: (options: GetAttributeOptions) => Promise<void>
   getText: (options: GetTextOptions) => Promise<void>
   getUrl: (options: GetUrlOptions) => void
-  saveAsset: (options: SaveAssetOptions) => Promise<void>
+  saveAsset: (options: SaveAssetOptions) => Promise<string>
   selectDropdown: (options: SelectDropdownOptions) => Promise<void>
   setVariable: (options: SetVariableOptions) => void
   uploadFile: (options: UploadFileOptions) => Promise<void>
